@@ -38,7 +38,7 @@ function agricoma_child_enqueue_styles() {
         'agricoma-child-style',
         get_stylesheet_directory_uri() . '/style.css',
         array('agricoma-parent-style'),
-        '3.0.0'
+        '3.1.0'
     );
 
     // Enqueue enhanced v3 CSS for product swap
@@ -46,7 +46,7 @@ function agricoma_child_enqueue_styles() {
         'product-swap-v3-style',
         get_stylesheet_directory_uri() . '/css/product-swap-v3.css',
         array('agricoma-child-style'),
-        '3.0.0'
+        '3.1.0'
     );
 }
 add_action('wp_enqueue_scripts', 'agricoma_child_enqueue_styles');
@@ -60,7 +60,7 @@ function swap_product_click_behaviors() {
         'product-behavior-swap',
         get_stylesheet_directory_uri() . '/js/product-swap.js',
         array('jquery'),
-        '3.0.0',
+        '3.1.0',
         true
     );
 
@@ -99,8 +99,8 @@ function swap_product_click_behaviors() {
             'ajaxurl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('product_swap_nonce'),
             'enable_debug' => $enable_debug || isset($_GET['debug_swap']),
-            'theme_version' => '3.0.0',
-            'script_version' => '3.0.0',
+            'theme_version' => '3.1.0',
+            'script_version' => '3.1.0',
             'comprehensive_mode' => true,
             'is_debug_mode' => $enable_debug,
             'current_page_type' => function_exists('get_current_screen') ? (get_current_screen() ? get_current_screen()->id : 'unknown') : 'admin_screen_unavailable',

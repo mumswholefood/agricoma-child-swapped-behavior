@@ -1,10 +1,11 @@
 /**
- * Product Behavior Swap Script v3.0
- * COMPREHENSIVE NAVIGATION PREVENTION
+ * Product Behavior Swap Script v3.1
+ * SIMPLIFIED NAVIGATION PREVENTION - FIXED MULTI-CLICK BUG
  *
- * Investigates and blocks ALL potential navigation triggers when clicking product images
+ * Simplified approach to prevent navigation conflicts that caused multi-click requirements
+ * Removed history API interference and complex navigation blocking
  *
- * @version 3.0.0
+ * @version 3.1.0
  * @author Agricoma Child Theme
  */
 
@@ -15,15 +16,15 @@
     console.log('🚀 Product Swap Script v3.0 Loading - COMPREHENSIVE VERSION');
     console.log('📊 Product Swap Variables:', window.productSwapVars);
 
-    // Configuration
+    // Configuration - simplified to prevent multi-click issues
     var config = {
         productType: '11', // Target product type
         enableDebug: false,
         animationDuration: 300,
         enableVisualIndicators: true,
         eventNamespace: '.productSwapV3',
-        preventionMethods: ['click', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'dblclick'],
-        logAllEvents: true
+        preventionMethods: ['click'], // Simplified to only click events
+        logAllEvents: false // Reduced logging for cleaner console
     };
 
     // Update config from PHP variables
@@ -56,156 +57,58 @@
         }
     }
 
-    // Navigation monitoring
-    var navigationBlocked = false;
-    var blockedNavigationCount = 0;
+    // Navigation monitoring simplified - removed complex blocking logic
 
-    // Block navigation temporarily with enhanced tracking (no visual indicators)
-    function blockNavigationTemporarily($element, reason) {
-        if (navigationBlocked) {
-            debugLog('Navigation already blocked, skipping');
-            return;
-        }
-
-        navigationBlocked = true;
-        blockedNavigationCount++;
-
-        debugLog('Navigation BLOCKED', {
-            reason: reason,
-            count: blockedNavigationCount,
-            element: $element[0].tagName + '.' + $element[0].className
-        });
-
-        // Store original href
+    // Simple navigation prevention - much shorter timeout
+    function preventNavigationOnce($element) {
         var originalHref = $element.attr('href');
-        $element.data('original-href', originalHref);
-
-        // Remove href to prevent browser navigation
         $element.attr('href', 'javascript:void(0);');
-
-        // Unblock after delay
+        
         setTimeout(function() {
-            if (navigationBlocked) {
-                debugLog('Navigation UNBLOCKED');
-                navigationBlocked = false;
-
-                // Restore original href if still needed
-                if ($element.data('original-href')) {
-                    $element.attr('href', $element.data('original-href'));
-                }
-            }
-        }, 3000); // Longer blocking period
+            $element.attr('href', originalHref);
+        }, 100); // Much shorter timeout to prevent multi-click issues
     }
 
-    // Monitor URL changes
-    var originalPushState = history.pushState;
-    var originalReplaceState = history.replaceState;
-    var currentUrl = window.location.href;
+    // History API interference removed - this was causing multi-click issues
+    // Let browser handle navigation naturally
 
-    function monitorUrlChange() {
-        if (window.location.href !== currentUrl) {
-            debugLog('URL CHANGE DETECTED', {
-                from: currentUrl,
-                to: window.location.href,
-                blocked: navigationBlocked
-            });
-
-            if (navigationBlocked) {
-                debugLog('BLOCKING URL CHANGE - stopping navigation');
-                history.replaceState({}, '', currentUrl);
-                return false;
-            }
-
-            currentUrl = window.location.href;
-        }
-    }
-
-    // Override history methods to monitor changes
-    history.pushState = function() {
-        if (navigationBlocked) {
-            debugLog('BLOCKED pushState call');
-            return false;
-        }
-        return originalPushState.apply(this, arguments);
-    };
-
-    history.replaceState = function() {
-        if (navigationBlocked) {
-            debugLog('BLOCKED replaceState call');
-            return false;
-        }
-        var result = originalReplaceState.apply(this, arguments);
-        monitorUrlChange();
-        return result;
-    };
-
-    // Monitor popstate (back/forward buttons)
-    window.addEventListener('popstate', function(e) {
-        debugLog('POPSTATE detected', {
-            url: window.location.href,
-            blocked: navigationBlocked
-        });
-        monitorUrlChange();
-    });
-
-    // Enhanced event prevention handler for both image and title clicks
+    // Simplified event prevention handler for both image and title clicks
     function handleProductClickEvent(e) {
-        var eventType = e.type;
+        // Only handle click events, ignore other event types
+        if (e.type !== 'click') return;
+        
         var $element = $(e.currentTarget);
         var elementType = $element.hasClass('product-link') ? 'product_image' :
                          $element.hasClass('product-name') || $element.closest('.product-name').length ? 'product_title' : 'unknown';
 
-        logEvent(eventType + '_on_' + elementType, e.currentTarget, {
-            preventDefaultCalled: true,
-            stopPropagationCalled: true,
-            stopImmediatePropagationCalled: true,
-            navigationBlocked: navigationBlocked
-        });
-
         debugLog('Product ' + elementType + ' event intercepted', {
-            eventType: eventType,
+            eventType: e.type,
             element: e.currentTarget.tagName + '.' + e.currentTarget.className,
-            href: e.currentTarget.href,
-            text: e.currentTarget.textContent ? e.currentTarget.textContent.substring(0, 50) + '...' : 'No text'
+            href: e.currentTarget.href
         });
 
-        // Only handle the first event (usually click)
-        if (eventType === 'click' && !navigationBlocked) {
-            // Prevent ALL default behaviors
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
+        // Prevent default navigation
+        e.preventDefault();
+        e.stopPropagation();
 
-            // Block navigation immediately
-            blockNavigationTemporarily($element, elementType + '_click');
+        // Simple navigation prevention
+        preventNavigationOnce($element);
 
-            var $productInner = $element.closest('.product-inner');
-            var productId = $productInner.data('id');
+        var $productInner = $element.closest('.product-inner');
+        var productId = $productInner.data('id');
 
-            debugLog('Processing product ' + elementType + ' click', {
-                productId: productId,
-                hasProductInner: $productInner.length > 0
-            });
-
-            if (!productId) {
-                console.error('No product ID found');
-                return false;
-            }
-
-            // Visual feedback
-            showClickFeedback($element, 'quickview');
-
-            // Trigger quick view with enhanced fallbacks
-            triggerQuickViewWithEnhancedFallbacks(productId, $productInner);
-
-            return false;
-        } else if (navigationBlocked) {
-            // Block all other events while navigation is blocked
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
+        if (!productId) {
+            console.error('No product ID found');
             return false;
         }
+
+        // Visual feedback
+        showClickFeedback($element, 'quickview');
+
+        // Trigger quick view with enhanced fallbacks
+        triggerQuickViewWithEnhancedFallbacks(productId, $productInner);
+
+        return false;
     }
 
     // Enhanced quick view trigger with comprehensive fallbacks
@@ -430,11 +333,7 @@
                     $modal.html(response.data);
                     debugLog('✅ Custom quick view content loaded successfully');
 
-                    // Ensure URL hasn't changed
-                    if (window.location.href !== currentUrl) {
-                        debugLog('⚠️ URL changed during loading - restoring');
-                        history.replaceState({}, '', currentUrl);
-                    }
+                    // URL restoration removed - let browser handle navigation naturally
                 } else {
                     $modal.html(`
                         <div style="text-align: center; padding: 40px 20px;">
@@ -484,15 +383,7 @@
             }
         });
 
-        // Ensure URL hasn't changed when modal closes
-        $overlay.on('click', function() {
-            setTimeout(function() {
-                if (window.location.href !== currentUrl) {
-                    debugLog('⚠️ URL changed during modal - restoring');
-                    history.replaceState({}, '', currentUrl);
-                }
-            }, 100);
-        });
+        // URL restoration removed - let browser handle navigation naturally
     }
 
     // Click feedback animation
@@ -541,20 +432,18 @@
             return;
         }
 
-        // Remove ALL existing event handlers
+        // Remove existing event handlers to prevent duplicates
         $(document).off(config.eventNamespace);
 
-        // Apply comprehensive event prevention to product links AND product titles
-        config.preventionMethods.forEach(function(eventType) {
-            // Product links (images)
-            $(document).on(eventType + config.eventNamespace, '.product-link', handleProductClickEvent);
+        // Apply simplified event prevention - only click events
+        // Product links (images)
+        $(document).on('click' + config.eventNamespace, '.product-link', handleProductClickEvent);
 
-            // Product titles (and links within product titles)
-            $(document).on(eventType + config.eventNamespace, '.product-name', handleProductClickEvent);
-            $(document).on(eventType + config.eventNamespace, '.product-name a', handleProductClickEvent);
+        // Product titles (and links within product titles)
+        $(document).on('click' + config.eventNamespace, '.product-name', handleProductClickEvent);
+        $(document).on('click' + config.eventNamespace, '.product-name a', handleProductClickEvent);
 
-            debugLog('Event prevention attached for', eventType, '(image + title)');
-        });
+        debugLog('Event handlers attached for click events (image + title)');
 
         // Also handle quick view button clicks (direct navigation)
         $(document).on('click' + config.eventNamespace, '.ninetheme-quickview-btn', function(e) {
@@ -683,8 +572,7 @@
         config: config,
         init: initProductBehaviorSwapV3,
         triggerQuickView: triggerQuickViewWithEnhancedFallbacks,
-        blockNavigation: function() { blockNavigationTemporarily($('.product-link').first(), 'manual'); },
-        unblockNavigation: function() { navigationBlocked = false; }
+        preventNavigation: function() { preventNavigationOnce($('.product-link').first()); }
     };
 
     debugLog('🎯 Product Swap Script v3.0 FULLY LOADED AND READY');
