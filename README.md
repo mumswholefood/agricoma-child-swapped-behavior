@@ -158,7 +158,7 @@ agricoma-child-swapped-behavior/
 ├── style.css             # Child theme styles and enhancements
 ├── js/
 │   └── product-swap.js   # Main behavior swap logic
-└── readme.txt            # This documentation
+└── README.md             # This documentation
 ```
 
 ## Customization
